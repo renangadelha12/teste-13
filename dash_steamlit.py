@@ -171,7 +171,7 @@ elif tab_or_graf == 'Gráfico':
 # Criar gráfico corrigido
     line_or_scatter=st.radio('Tipo do Gráfico',['Linha','Dispersão'])
     if anual_mensal == 'Mensal':
-        titulo_grafico = f'{variavel_analise1} ({med_min_max}) ao longo do período selecionado: {mes_analise1}-{ano_analise1}'
+        titulo_grafico = f'{variavel_analise1} ({med_min_max}) ao longo do período selecionado: {mes_analise}-{ano_analise1}'
     elif anual_mensal == 'Anual':
         titulo_grafico = f'{variavel_analise1} ({med_min_max}) ao longo do período selecionado: {ano_analise1}'
 
