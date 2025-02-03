@@ -46,7 +46,7 @@ st.markdown(
 
 #parte de pegar os dados
 topo = ['Date', 'Time','Temperatura (°C)', 'Hi temp (°C)', 'Low Temp (°C)', 'Umidade (%)', 'Dew Pt. (°C)', 'Velocidade do Vento (m/s)', 'Wind Dir', 'Wind Run (m/s)', 'Hi Speed (m/s)', 'Hi Dir', 'Wind Chill', 'Heat Index', 'THW Index', 'THSW Index', 'Pressão Atm.', 'Precipitação', 'Rain Rate (mm)', 'Solar Rad', 'Solar Energy', 'Hi Solar Rad', 'UVI', 'UV Dose', 'Hi UV', 'Heat D-D', 'Cool D-D', 'In Temp', 'In Hum', 'In Dew', 'In Heat', 'In EMC', 'In Air Density', 'ET', 'Wind Samp', 'Wind TX', 'ISS Recept', 'Arc Int.']
-dados = '1213.txt'
+dados = 'd11.txt'
 topo2 = ['Temperatura (°C)', 'Hi temp (°C)', 'Low Temp (°C)', 'Umidade (%)', 'Dew Pt. (°C)', 'Velocidade do Vento (m/s)', 'Wind Dir ', 'Wind Run (m/s)', 'Hi Speed (m/s)', 'Hi Dir', 'Wind Chill', 'Heat Index', 'THW Index', 'THSW Index', 'Pressão Atm.', 'Precipitação', 'Rain Rate (mm)', 'Solar Rad', 'Solar Energy', 'Hi Solar Rad', 'UVI', 'UV Dose', 'Hi UV', 'Heat D-D', 'Cool D-D', 'In Temp', 'In Hum', 'In Dew', 'In Heat', 'In EMC', 'In Air Density', 'ET', 'Wind Samp', 'Wind TX', 'ISS Recept', 'Arc Int.']
 
 davis = pd.read_csv(dados, sep='\t', dtype={'Temp OUT': float, 'Out Hum': float, 'Rain': float, 'UV Index': float, 'UV Dose': float, 'Bar': float, 'Dew Pt.': float, 'Heat Index': float}, na_values=['---', '------'], header=1, names=topo)
@@ -132,7 +132,7 @@ n_variaveis=st.radio('Quantas variaveis para analisar',[1,2,3,4])
 conjunto_variaveis = []
 
 for i in range(n_variaveis):
-    variavel = st.selectbox(f'Selecione a variável {i+1}', variaveis_analise1, key=f'var_{i}')
+    variavel = st.selectbox(f'Selecione a variável {i}', variaveis_analise1, key=f'var_{i}')
     conjunto_variaveis.append(variavel)
 
 if med_min_max == 'Média':
@@ -166,44 +166,53 @@ if tab_or_graf == 'Tabela':
     st.write(davis_analise1)
 
 elif tab_or_graf == 'Gráfico':
-    variavel_analise1=conjunto_variaveis[0]     
+    variavel_analise1=conjunto_variaveis[0]    
     eixo_x = 'Mês' if anual_mensal == 'Anual' else 'Dia'
 # Criar gráfico corrigido
-    line_or_scatter=st.radio('Tipo do Gráfico',['Linha','Dispersão'])
-    if anual_mensal == 'Mensal':
-        titulo_grafico = f'{variavel_analise1} ({med_min_max}) ao longo do período selecionado: {mes_analise}-{ano_analise1}'
-    elif anual_mensal == 'Anual':
-        titulo_grafico = f'{variavel_analise1} ({med_min_max}) ao longo do período selecionado: {ano_analise1}'
+    line_or_scatter=st.radio('Tipo do Gráfico',['Linha','Dispersão','Barras'])
 
-    if line_or_scatter == 'Linha':
-        chart2 = alt.Chart(davis_analise1).mark_line().encode(
-        x=alt.X(f'{eixo_x}:O', title=eixo_x),
-        y=alt.Y(
-            f'{variavel_analise1}:Q', 
-            title=f'{variavel_analise1}',  
-            scale=alt.Scale(domain=[davis_analise1[variavel_analise1].min(), davis_analise1[variavel_analise1].max()])
-        )
-        ).properties(
-        title= titulo_grafico
-        )
-        st.altair_chart(chart2, use_container_width=True)
+    for variavel_analise1 in conjunto_variaveis:
 
+        if anual_mensal == 'Mensal':
+            titulo_grafico = f'{variavel_analise1} ({med_min_max}) ao longo do período selecionado: {mes_analise}-{ano_analise1}'
+        else:
+            titulo_grafico = f'{variavel_analise1} ({med_min_max}) ao longo do período selecionado: {ano_analise1}'
 
-    if line_or_scatter =='Dispersão':
-    
-        chart2 = alt.Chart(davis_analise1).mark_square().encode(
-        x=alt.X(f'{eixo_x}:O', title=eixo_x),
-        y=alt.Y(
-            f'{variavel_analise1}:Q', 
-            title=f'{variavel_analise1}',  
-            scale=alt.Scale(domain=[davis_analise1[variavel_analise1].min(), davis_analise1[variavel_analise1].max()])
-        )
-        ).properties(
-        title=titulo_grafico
-        )
-        st.altair_chart(chart2, use_container_width=True)
+        if line_or_scatter == 'Linha':
+            chart2 = alt.Chart(davis_analise1).mark_line().encode(
+                x=alt.X(f'{eixo_x}:O', title=eixo_x),
+                y=alt.Y(
+                    f'{variavel_analise1}:Q', 
+                    title=f'{variavel_analise1}',  
+                    scale=alt.Scale(domain=[davis_analise1[variavel_analise1].min(), davis_analise1[variavel_analise1].max()])
+                )
+            ).properties(
+                title=titulo_grafico
+            )
+            st.altair_chart(chart2, use_container_width=True)
 
+        elif line_or_scatter == 'Dispersão':
+            chart2 = alt.Chart(davis_analise1).mark_circle().encode(
+                x=alt.X(f'{eixo_x}:O', title=eixo_x),
+                y=alt.Y(
+                    f'{variavel_analise1}:Q', 
+                    title=f'{variavel_analise1}',  
+                    scale=alt.Scale(domain=[davis_analise1[variavel_analise1].min(), davis_analise1[variavel_analise1].max()])
+                )
+            ).properties(
+                title=titulo_grafico
+            )
+            st.altair_chart(chart2, use_container_width=True)
 
-    
+        elif line_or_scatter == 'Barras':
+            chart2 = alt.Chart(davis_analise1).mark_bar(size=20).encode(
+                x=alt.X(f'{eixo_x}:N', title=eixo_x),
+                y=alt.Y(f'{variavel_analise1}:Q', title=f'{variavel_analise1}')
+            ).properties(
+                title=titulo_grafico
+            )
+            st.altair_chart(chart2, use_container_width=True)
+
+        
 
 
