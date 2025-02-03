@@ -169,7 +169,7 @@ elif tab_or_graf == 'Gráfico':
     variavel_analise1=conjunto_variaveis[0]    
     eixo_x = 'Mês' if anual_mensal == 'Anual' else 'Dia'
 # Criar gráfico corrigido
-    line_or_scatter=st.radio('Tipo do Gráfico',['Linha','Dispersão','Barras'])
+    line_or_scatter=st.radio('Tipo do Gráfico',['Linha','Dispersão','Colunas'])
 
     for variavel_analise1 in conjunto_variaveis:
 
@@ -204,7 +204,7 @@ elif tab_or_graf == 'Gráfico':
             )
             st.altair_chart(chart2, use_container_width=True)
 
-        elif line_or_scatter == 'Barras':
+        elif line_or_scatter == 'Colunas':
             chart2 = alt.Chart(davis_analise1).mark_bar(size=20).encode(
                 x=alt.X(f'{eixo_x}:N', title=eixo_x),
                 y=alt.Y(f'{variavel_analise1}:Q', title=f'{variavel_analise1}')
