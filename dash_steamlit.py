@@ -2,48 +2,134 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import altair as alt
-st.set_page_config(page_title="Dashboard de Dados Meteorológicos", layout="wide")
 import streamlit as st
+st.set_page_config(page_title="Dashboard de Dados Meteorológicos", layout="wide")
+st.markdown('<h1 style="color:orange">Dashboard de Dados Meteorológicos - Vantage Pro 2</h1>', unsafe_allow_html=True)
 
-# Adicionar CSS para personalizar o layout, o fundo e a imagem
-st.markdown(
-    """
-    <style>
-    /* Alterar fundo de toda a página */
-    .stApp {
-        background-color:rgb(255, 255, 255); /
-    }
+temas=st.radio('Escolha um Tema',['Padrão','Escuro','INPE'])
+# Alternador de tema
 
-    /* Centralizar o conteúdo e controlar largura */
-    .main {
-        max-width: 85%; /* Define a largura máxima */
-        margin: 0 auto; /* Centraliza horizontalmente */
-        padding: 20px; /* Adiciona espaço interno */
-        border-radius: 10px; /* Suaviza bordas */
-    }
-
-    /* Centralizar a imagem e configurar tamanho */
-    .logo-container {
-        text-align: center; /* Centralizar a imagem */
-        margin-bottom: 20px; /* Espaço abaixo da imagem */
-    }
-
-    .logo-container img {
-        width: 50%; /* Largura da imagem */
-        height: auto; /* Manter proporção */
-        border-radius: 10px; /* Suavizar bordas da imagem */
-    }
+# Configuração de cores para os temas
+if temas == 'Escuro':
+    bg_color = "#121212"       # Fundo escuro
+    text_color = "#FFA500"      # Texto laranja no modo escuro
+    card_bg = "#1e1e1e"        # Cartões mais escuros
+    bar_color = "#FFA500"      # Cor das barras no gráfico
+    chart_bg = "#2a2a2a"       # Fundo grafite dos gráficos
+    border_color=text_color
+    selected_bg = "orange"  # Cor de fundo quando selecionado
+    selected_text = "#333333"  # Cor do texto quando selecionado
         
-    """,
-    unsafe_allow_html=True
-)
 
-# Tente carregar a imagem usando o caminho correto
+elif temas == 'Padrão':
+    bg_color = "#ffffff"       # Fundo branco
+    text_color = "#5c8aff"      # Texto preto no modo claro
+    card_bg = "#f5f5f5"        # Cartões mais claros
+    bar_color = "#5c8aff"      # Cor das barras no gráfico
+    chart_bg = "#ffffff"       # Fundo branco dos gráficos
+    border_color=text_color
+    selected_bg = "#007BFF"  # Cor de fundo quando selecionado
+    selected_text = "white"
+elif temas == 'INPE':
+    bg_color = "#0078BE"       # Fundo 
+    text_color = "#FF9300"      # Texto 
+    card_bg = "#0078BE"        # Cartões 
+    bar_color = "#FFA500"      # Cor das barras no gráfico
+    chart_bg = "#0078BE"       # Fundo branco dos gráficos
+    border_color=text_color
+    selected_bg = "#007BFF"  # Cor de fundo quando selecionado
+    selected_text = "0078BE"
 
 
-# Exemplo de uso de uma outra imagem com o st.image
+
+
+
+
+# Definição de CSS para os temas (garantindo que o texto fique laranja no modo escuro)
+tema_css = f"""
+<style>
+.stApp {{
+    background-color: {bg_color};
+    color: {text_color};
+}}
+h1, h2, h3, h4, h5, h6, p, span, div {{
+    color: {text_color} !important;
+}}
+.main {{
+    max-width: 85%;
+    margin: 0 auto;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: {card_bg};
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+}}
+</style>
+"""
+selectbox_css = f"""
+
+<style>
+div[data-baseweb="select"] {{
+    background-color: {card_bg} !important; /* Fundo do dropdown */
+    color: {text_color} !important; /* Cor do texto */
+    border-radius: 5px;
+}}
+
+div[data-baseweb="select"] > div {{
+    background-color: {card_bg} !important; /* Fundo da caixa de opções */
+}}
+</style>
+"""
+
+selectradio_css = f"""
+<style>
+/* Estilos para os botões de rádio */
+div[data-baseweb="radio"] {{
+    background-color: {card_bg} !important; /* Fundo do contêiner */
+    color: {text_color} !important; /* Cor do texto */
+    border-radius: 5px;
+    padding: 10px;
+}}
+
+div[data-baseweb="radio"] label {{
+    color: {text_color} !important; /* Cor do texto das labels */
+}}
+
+div[data-baseweb="radio"] div[role="radio"] {{
+    background-color: {card_bg} !important; /* Fundo dos botões de rádio */
+    color: {text_color} !important; /* Cor do texto do botão */
+    border: 2px solid {border_color} !important; /* Borda do botão */
+    padding: 5px 15px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    transition: background-color 0.3s, color 0.3s !important;
+}}
+
+div[data-baseweb="radio"] div[role="radio"]:hover {{
+    background-color: {border_color} !important; /* Fundo no hover */
+    color: {card_bg} !important; /* Cor do texto no hover */
+}}
+
+div[data-baseweb="radio"] div[role="radio"][aria-checked="true"] {{
+    background-color: {selected_bg} !important; /* Fundo quando selecionado */
+    color: {selected_text} !important; /* Cor do texto quando selecionado */
+    border: 2px solid {selected_bg} !important; /* Borda quando selecionado */
+}}
+
+div[data-baseweb="radio"] div[role="radio"]:not([aria-checked="true"]) {{
+    background-color: {card_bg} !important; /* Fundo para os não selecionados */
+    color: {text_color} !important;
+}}
+
+</style>
+"""
+
+# Inserir o CSS no Streamlit
+st.markdown(selectradio_css, unsafe_allow_html=True)
+st.markdown(selectbox_css, unsafe_allow_html=True)
+
+# Aplicação do tema dinâmico
+st.markdown(tema_css, unsafe_allow_html=True)
 #st.image("logo l.png", width=200)
-
 #parte de pegar os dados
 topo = ['Date', 'Time','Temperatura (°C)', 'Hi temp (°C)', 'Low Temp (°C)', 'Umidade (%)', 'Dew Pt. (°C)', 'Velocidade do Vento (m/s)', 'Wind Dir', 'Wind Run (m/s)', 'Hi Speed (m/s)', 'Hi Dir', 'Wind Chill', 'Heat Index', 'THW Index', 'THSW Index', 'Pressão Atm.', 'Precipitação', 'Rain Rate (mm)', 'Solar Rad', 'Solar Energy', 'Hi Solar Rad', 'UVI', 'UV Dose', 'Hi UV', 'Heat D-D', 'Cool D-D', 'In Temp', 'In Hum', 'In Dew', 'In Heat', 'In EMC', 'In Air Density', 'ET', 'Wind Samp', 'Wind TX', 'ISS Recept', 'Arc Int.']
 dados = '1213.txt'
@@ -66,7 +152,6 @@ variaveis_analise1=variaveis
 tipos_de_analise=list(['Média','Máximos','Minimos'])
 selecao_1=list(['Gráfico','Tabela'])
 # Usando HTML para estilizar o título
-st.markdown('<h1 style="color:orange">Dashboard de Dados Meteorológicos - Vantage Pro 2</h1>', unsafe_allow_html=True)
 
 
 # Seleção de ano , mês e dia
@@ -95,11 +180,20 @@ if anual_mensal == 'Diária':
         chart = alt.Chart(davis_selecionado1).mark_line().encode(
             x=alt.X('Hora:O', title='Hora do Dia'),
             y=alt.Y(f'{variavel_grafico}:Q', title=f'{variavel_grafico}'), 
-            tooltip=['Hora', 'Temperatura:Q']
+            tooltip=['Hora', 'Temperatura:Q'],
+            color=alt.value(bar_color)
         ).properties(
-            title=f'{variavel_grafico} ao longo do dia selecionado'
-        )
-        chart = chart.configure(background='white')  
+        title=f'{variavel_grafico} ao longo do dia selecionado',
+        background=chart_bg,
+    ).configure_title(
+        fontSize=20,
+        color=text_color  # Define a cor do título
+    ).configure_view(
+        strokeWidth=0  # Remove borda ao redor do gráfico
+    ).configure_axis(
+        labelColor=text_color,  # Cor dos rótulos dos eixos
+        titleColor=text_color  # Cor dos títulos dos eixos
+    )  
 
 
         st.altair_chart(chart, use_container_width=True)
@@ -107,9 +201,19 @@ if anual_mensal == 'Diária':
         chart = alt.Chart(davis_selecionado1).mark_circle().encode(
             x=alt.X('Hora:O', title='Hora do Dia'),
             y=alt.Y(f'{variavel_grafico}:Q', title=f'{variavel_grafico}'), 
-            tooltip=['Hora', 'Temperatura:Q']
+            tooltip=['Hora', 'Temperatura:Q'],
+            color=alt.value(bar_color)
         ).properties(
-            title=f'{variavel_grafico} ao longo do dia selecionado'
+            title=f'{variavel_grafico} ao longo do dia selecionado',
+            background=chart_bg,
+        ).configure_title(
+            fontSize=20,
+            color=text_color  # Define a cor do título
+        ).configure_view(
+            strokeWidth=0  # Remove borda ao redor do gráfico
+        ).configure_axis(
+            labelColor=text_color,  # Cor dos rótulos dos eixos
+            titleColor=text_color  # Cor dos títulos dos eixos
         )
 
         st.altair_chart(chart, use_container_width=True)
@@ -130,9 +234,19 @@ if plot_chuva == 'Sim':
     theta=alt.Theta('Proporcao:Q', title='Proporção de Precipitação no Ano (%)'),
     color=alt.Color('Mês:O', scale=alt.Scale(scheme='accent'), title='Mês'),  
     tooltip=['Mês:O', 'Precipitação:Q', 'Proporcao:Q']
+    
     ).properties(
-        title=f'Distribuição da Precipitação no Ano {ano_selecionado}'
-    )
+                    title=f'Distribuição da Precipitação no Ano {ano_selecionado}',
+                    background=chart_bg,
+                ).configure_title(
+                    fontSize=20,
+                    color=text_color  # Define a cor do título
+                ).configure_view(
+                    strokeWidth=0  # Remove borda ao redor do gráfico
+                ).configure_axis(
+                    labelColor=text_color,  # Cor dos rótulos dos eixos
+                    titleColor=text_color  # Cor dos títulos dos eixos
+                )
 
     # Exibindo o gráfico no Streamlit
     st.altair_chart(chart_rain, use_container_width=True)
@@ -217,9 +331,19 @@ if anual_mensal == 'Anual' or anual_mensal == 'Mensal':
                         f'{variavel_analise1}:Q', 
                         title=f'{variavel_analise1}',  
                         scale=alt.Scale(domain=[davis_analise1[variavel_analise1].min(), davis_analise1[variavel_analise1].max()])
-                    )
+                    ),
+                    color=alt.value(bar_color)
                 ).properties(
-                    title=titulo_grafico
+                    title=f'{variavel_analise1} ao longo do dia selecionado',
+                    background=chart_bg,
+                ).configure_title(
+                    fontSize=20,
+                    color=text_color  # Define a cor do título
+                ).configure_view(
+                    strokeWidth=0  # Remove borda ao redor do gráfico
+                ).configure_axis(
+                    labelColor=text_color,  # Cor dos rótulos dos eixos
+                    titleColor=text_color  # Cor dos títulos dos eixos
                 )
                 st.altair_chart(chart2, use_container_width=True)
 
@@ -230,18 +354,38 @@ if anual_mensal == 'Anual' or anual_mensal == 'Mensal':
                         f'{variavel_analise1}:Q', 
                         title=f'{variavel_analise1}',  
                         scale=alt.Scale(domain=[davis_analise1[variavel_analise1].min(), davis_analise1[variavel_analise1].max()])
-                    )
+                    ),
+                color=alt.value(bar_color)
                 ).properties(
-                    title=titulo_grafico
+                    title=f'{variavel_analise1} ao longo do dia selecionado',
+                    background=chart_bg,
+                ).configure_title(
+                    fontSize=20,
+                    color=text_color  # Define a cor do título
+                ).configure_view(
+                    strokeWidth=0  # Remove borda ao redor do gráfico
+                ).configure_axis(
+                    labelColor=text_color,  # Cor dos rótulos dos eixos
+                    titleColor=text_color  # Cor dos títulos dos eixos
                 )
                 st.altair_chart(chart2, use_container_width=True)
 
             elif line_or_scatter == 'Colunas':
                 chart2 = alt.Chart(davis_analise1).mark_bar(size=20).encode(
                     x=alt.X(f'{eixo_x}:N', title=eixo_x),
-                    y=alt.Y(f'{variavel_analise1}:Q', title=f'{variavel_analise1}')
+                    y=alt.Y(f'{variavel_analise1}:Q', title=f'{variavel_analise1}'),
+                    color=alt.value(bar_color)
                 ).properties(
-                    title=titulo_grafico
+                    title=f'{variavel_analise1} ao longo do dia selecionado',
+                    background=chart_bg,
+                ).configure_title(
+                    fontSize=20,
+                    color=text_color  # Define a cor do título
+                ).configure_view(
+                    strokeWidth=0  # Remove borda ao redor do gráfico
+                ).configure_axis(
+                    labelColor=text_color,  # Cor dos rótulos dos eixos
+                    titleColor=text_color  # Cor dos títulos dos eixos
                 )
                 st.altair_chart(chart2, use_container_width=True)
             elif line_or_scatter == 'Dispersão em ondas':
@@ -282,7 +426,8 @@ if anual_mensal == 'Anual' or anual_mensal == 'Mensal':
                         .header(labelAngle=0, labelAlign='left', format='%B')
                 ).properties(
                     title=f'{variavel_analise1} ao longo do ano {ano_analise1}',
-                    bounds='flush'
+                    bounds='flush',
+                    background=chart_bg
                 ).configure_facet(
                     spacing=0
                 ).configure_view(
