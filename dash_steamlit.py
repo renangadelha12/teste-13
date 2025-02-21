@@ -260,21 +260,23 @@ if plot_chuva == 'Sim':
 
 #aqui nos vamos fazer a parte que bota o gráfico de observações anuais  - analise 1
 
-if anual_mensal == 'Anual':
-    ano_analise1 = st.selectbox('Selecione o ano', anos_lista_analise_1, index=0, key='ano_analise1')
-if anual_mensal == 'Mensal':
-    ano_analise1 = st.selectbox('Selecione o ano', anos_lista_analise_1, index=0, key='ano_analise1')
-    mes_analise=st.radio('Escolha um mês',['1','2','3','4','5','6','7','8','9','10','11','12'])
-    mes_analise = int(mes_analise)
+
+
 if anual_mensal == 'Anual' or anual_mensal == 'Mensal':
     med_min_max=st.radio('Escolha uma opção',['Média','Mínimo','Máximo'])
-
-    n_variaveis=st.radio('Quantas variaveis para analisar',[1,2,3,4])
+    n_variaveis = st.radio('Quantas variáveis para analisar', [1, 2, 3, 4])
     conjunto_variaveis = []
+    variaveis_disponiveis = variaveis_analise1.copy()  # Faz uma cópia da lista original
 
     for i in range(n_variaveis):
-        variavel = st.selectbox(f'Selecione a variável {i}', variaveis_analise1, key=f'var_{i}')
+        if not variaveis_disponiveis:
+            break  # Para o loop se não houver mais variáveis disponíveis
+
+        variavel = st.selectbox(f'Selecione uma variável ', variaveis_disponiveis, key=f'var_{i}')
         conjunto_variaveis.append(variavel)
+
+        # Remove a variável selecionada da lista disponível
+        variaveis_disponiveis.remove(variavel)
 
     if med_min_max == 'Média':
         med_min_max = 'mean'
@@ -287,154 +289,246 @@ if anual_mensal == 'Anual' or anual_mensal == 'Mensal':
 
     # Criar um seletor de opções com radio buttons
     tab_or_graf = st.radio('Escolha uma opção:', ['Tabela', 'Gráfico'])
+    
 
-    davis_analise1=davis[davis['Year'] == ano_analise1]
+# Supondo que 'davis' seja o DataFrame contendo os dados e as listas de anos e variáveis disponíveis
+if anual_mensal == 'Anual':
+    #n_anos = st.radio('Quantos anos você quer analisar', [1, 2, 3, 4])
+    n_years = st.number_input(
+        'Quantos anos você quer analisar?', 
+        min_value=1,  
+        step=1,  
+        value=1  
+    )
+    n_anos=int(n_years)
+    conjunto_anos = []
+    anos_disponiveis = anos_lista_analise_1.copy()
+    cols = st.columns(n_anos)
+
+    for i in range(n_anos):
+        if not anos_disponiveis:
+            break
+        with cols[i]:  # Coloca o selectbox dentro da coluna correspondente
+            ano = st.selectbox(f'Ano ', anos_disponiveis, key=f'ano_{i}')
+        conjunto_anos.append(ano)
+        anos_disponiveis.remove(ano)
+
+    if len(conjunto_anos) == 1:
+        ano_analise1 = conjunto_anos[0]
+        davis_analise1 = davis[davis['Year'] == ano_analise1]
+        davis_analise1 = davis_analise1[['Year', 'Dat', 'Mês', 'Time', 'Dia'] + conjunto_variaveis]
+
+        davis_analise1['Hora'] = pd.to_datetime(davis_analise1['Time'], format='%H:%M').dt.strftime('%H:%M')
+
+        davis_analise1 = davis_analise1.groupby('Mês')[conjunto_variaveis].agg(med_min_max).reset_index()
+
+    elif len(conjunto_anos) > 1:
+        davis_analise2 = davis[davis['Year'].isin(conjunto_anos)]
+        davis_analise2 = davis_analise2[['Year', 'Dat', 'Mês', 'Time', 'Dia'] + conjunto_variaveis]
+        davis_analise2 = davis_analise2.groupby(['Mês', 'Year'])[conjunto_variaveis].agg(med_min_max).reset_index()
 
 
-    davis_analise1 = davis_analise1[['Year', 'Dat', 'Mês', 'Time', 'Dia'] + conjunto_variaveis]
-    davis_analise1.loc[:, 'Hora'] = davis_analise1['Time']
-    davis_analise1.loc[:, 'Hora'] = pd.to_datetime(davis_analise1['Hora'], format='%H:%M').dt.strftime('%H:%M')
 
-    #Determinar como vai ser o df da analise
-    # Aplicar a função estatística correta
-    davis_analise1 = davis_analise1.groupby('Mês')[conjunto_variaveis].agg(med_min_max).reset_index()
-    if anual_mensal == 'Mensal':
-        davis_analise1 = davis[(davis['Year'] == ano_analise1) & (davis['Mês'] == int(mes_analise))]
-        davis_analise1 = davis_analise1.groupby('Dia')[conjunto_variaveis].agg(med_min_max).reset_index()
-
+    # Escolha de Tabela ou Gráfico
     if tab_or_graf == 'Tabela':
-
-        st.write(davis_analise1)
+        if len(conjunto_anos) == 1:
+            st.write(davis_analise1)
+        else:
+            st.write(davis_analise2)
 
     elif tab_or_graf == 'Gráfico':
-        variavel_analise1=conjunto_variaveis[0]    
+        variavel_analise1 = conjunto_variaveis[0]    
         eixo_x = 'Mês' if anual_mensal == 'Anual' else 'Dia'
 
-        
         if anual_mensal == 'Anual':
-            line_or_scatter=st.radio('Tipo do Gráfico',['Linha','Dispersão','Colunas','Dispersão em ondas'])
-        elif anual_mensal == 'Mensal':
-            line_or_scatter=st.radio('Tipo do Gráfico',['Linha','Dispersão','Colunas'])
-
+            line_or_scatter = st.radio('Tipo do Gráfico', ['Linha', 'Dispersão', 'Colunas'])
+        else:
+            line_or_scatter = st.radio('Tipo do Gráfico', ['Linha', 'Dispersão', 'Colunas'])
 
         for variavel_analise1 in conjunto_variaveis:
+            titulo_grafico = f'{variavel_analise1} ({med_min_max}) ao longo do período selecionado'
 
-            if anual_mensal == 'Mensal':
-                titulo_grafico = f'{variavel_analise1} ({med_min_max}) ao longo do período selecionado: {mes_analise}-{ano_analise1}'
+            if len(conjunto_anos) == 1:
+                df_plot = davis_analise1
             else:
-                titulo_grafico = f'{variavel_analise1} ({med_min_max}) ao longo do período selecionado: {ano_analise1}'
+                df_plot = davis_analise2
 
             if line_or_scatter == 'Linha':
-                chart2 = alt.Chart(davis_analise1).mark_line().encode(
+                chart = alt.Chart(df_plot).mark_line().encode(
                     x=alt.X(f'{eixo_x}:O', title=eixo_x),
-                    y=alt.Y(
-                        f'{variavel_analise1}:Q', 
-                        title=f'{variavel_analise1}',  
-                        scale=alt.Scale(domain=[davis_analise1[variavel_analise1].min(), davis_analise1[variavel_analise1].max()])
-                    ),
-                    color=alt.value(bar_color)
+                    y=alt.Y(f'{variavel_analise1}:Q', title=variavel_analise1,scale=alt.Scale(domain=[df_plot[variavel_analise1].min(), df_plot[variavel_analise1].max()])),
+                    color='Year:N' if len(conjunto_anos) > 1 else alt.value(bar_color)
                 ).properties(
-                    title=f'{variavel_analise1} ao longo do dia selecionado',
+                    title=titulo_grafico,
                     background=chart_bg,
-                ).configure_title(
-                    fontSize=20,
-                    color=text_color  # Define a cor do título
-                ).configure_view(
-                    strokeWidth=0  # Remove borda ao redor do gráfico
                 ).configure_axis(
-                    labelColor=text_color,  # Cor dos rótulos dos eixos
-                    titleColor=text_color  # Cor dos títulos dos eixos
+                    labelColor=text_color,  
+                    titleColor=text_color  
                 )
-                st.altair_chart(chart2, use_container_width=True)
+                st.altair_chart(chart, use_container_width=True)
 
             elif line_or_scatter == 'Dispersão':
-                chart2 = alt.Chart(davis_analise1).mark_circle().encode(
+                chart = alt.Chart(df_plot).mark_circle().encode(
                     x=alt.X(f'{eixo_x}:O', title=eixo_x),
-                    y=alt.Y(
-                        f'{variavel_analise1}:Q', 
-                        title=f'{variavel_analise1}',  
-                        scale=alt.Scale(domain=[davis_analise1[variavel_analise1].min(), davis_analise1[variavel_analise1].max()])
-                    ),
-                color=alt.value(bar_color)
+                    y=alt.Y(f'{variavel_analise1}:Q', title=variavel_analise1,scale=alt.Scale(domain=[df_plot[variavel_analise1].min(), df_plot[variavel_analise1].max()])),
+                    color='Year:N' if len(conjunto_anos) > 1 else alt.value(bar_color)
                 ).properties(
-                    title=f'{variavel_analise1} ao longo do dia selecionado',
+                    title=titulo_grafico,
                     background=chart_bg,
-                ).configure_title(
-                    fontSize=20,
-                    color=text_color  # Define a cor do título
-                ).configure_view(
-                    strokeWidth=0  # Remove borda ao redor do gráfico
                 ).configure_axis(
-                    labelColor=text_color,  # Cor dos rótulos dos eixos
-                    titleColor=text_color  # Cor dos títulos dos eixos
+                    labelColor=text_color,  
+                    titleColor=text_color  
                 )
-                st.altair_chart(chart2, use_container_width=True)
+                st.altair_chart(chart, use_container_width=True)
 
             elif line_or_scatter == 'Colunas':
-                chart2 = alt.Chart(davis_analise1).mark_bar(size=20).encode(
-                    x=alt.X(f'{eixo_x}:N', title=eixo_x),
-                    y=alt.Y(f'{variavel_analise1}:Q', title=f'{variavel_analise1}'),
-                    color=alt.value(bar_color)
+                chart = alt.Chart(df_plot).mark_bar(size=20).encode(
+                    x=alt.X(f'{eixo_x}:O', title=eixo_x),
+                    y=alt.Y(f'{variavel_analise1}:Q', title=variavel_analise1),
+                    color='Year:N' if len(conjunto_anos) > 1 else alt.value(bar_color)
                 ).properties(
-                    title=f'{variavel_analise1} ao longo do dia selecionado',
+                    title=titulo_grafico,
                     background=chart_bg,
-                ).configure_title(
-                    fontSize=20,
-                    color=text_color  # Define a cor do título
-                ).configure_view(
-                    strokeWidth=0  # Remove borda ao redor do gráfico
                 ).configure_axis(
-                    labelColor=text_color,  # Cor dos rótulos dos eixos
-                    titleColor=text_color  # Cor dos títulos dos eixos
+                    labelColor=text_color,  
+                    titleColor=text_color  
                 )
-                st.altair_chart(chart2, use_container_width=True)
+                st.altair_chart(chart, use_container_width=True)
+
             elif line_or_scatter == 'Dispersão em ondas':
-                davis_ano = davis[davis['Year'] == ano_analise1]
+                    davis_ano = davis[davis['Year'] == ano_analise1]
 
-                davis_ano['Date'] = pd.to_datetime(davis_ano['Date'])
-                step = 20
-                overlap = 1
+                    davis_ano['Date'] = pd.to_datetime(davis_ano['Date'])
+                    step = 20
+                    overlap = 1
 
-                chart_temp_ano = alt.Chart(davis_ano, height=step).transform_timeunit(
-                    Month='month(Date)'
-                ).transform_joinaggregate(
-                    mean_value=f'mean({variavel_analise1})', groupby=['Month']
-                ).transform_bin(
-                    ['bin_max', 'bin_min'], variavel_analise1
-                ).transform_aggregate(
-                    value='count()', groupby=['Month', 'mean_value', 'bin_min', 'bin_max']
-                ).transform_impute(
-                    impute='value', groupby=['Month', 'mean_value'], key='bin_min', value=0
-                ).mark_area(
-                    interpolate='monotone',
-                    fillOpacity=0.8,
-                    stroke='lightgray',
-                    strokeWidth=0.5
-                ).encode(
-                    alt.X('bin_min:Q')
-                        .bin('binned')
-                        .title(f'{variavel_analise1}'),
-                    alt.Y('value:Q')
-                        .axis(None)
-                        .scale(range=[step, -step * overlap]),
-                    alt.Fill('Month:N')  # Cada mês com cor diferente
-                        .legend(None)
-                        .scale(scheme='category20'),  # Paleta de cores distintas para meses
-                ).facet(
-                    row=alt.Row('Month:T')
-                        .title(None)
-                        .header(labelAngle=0, labelAlign='left', format='%B')
-                ).properties(
-                    title=f'{variavel_analise1} ao longo do ano {ano_analise1}',
-                    bounds='flush',
-                    background=chart_bg
-                ).configure_facet(
-                    spacing=0
-                ).configure_view(
-                    stroke=None
-                ).configure_title(
-                    anchor='end'
-                )
+                    chart_temp_ano = alt.Chart(davis_ano, height=step).transform_timeunit(
+                        Month='month(Date)'
+                    ).transform_joinaggregate(
+                        mean_value=f'mean({variavel_analise1})', groupby=['Month']
+                    ).transform_bin(
+                        ['bin_max', 'bin_min'], variavel_analise1
+                    ).transform_aggregate(
+                        value='count()', groupby=['Month', 'mean_value', 'bin_min', 'bin_max']
+                    ).transform_impute(
+                        impute='value', groupby=['Month', 'mean_value'], key='bin_min', value=0
+                    ).mark_area(
+                        interpolate='monotone',
+                        fillOpacity=0.8,
+                        stroke='lightgray',
+                        strokeWidth=0.5
+                    ).encode(
+                        alt.X('bin_min:Q')
+                            .bin('binned')
+                            .title(f'{variavel_analise1}'),
+                        alt.Y('value:Q')
+                            .axis(None)
+                            .scale(range=[step, -step * overlap]),
+                        alt.Fill('Month:N')  # Cada mês com cor diferente
+                            .legend(None)
+                            .scale(scheme='category20'),  # Paleta de cores distintas para meses
+                    ).facet(
+                        row=alt.Row('Month:T')
+                            .title(None)
+                            .header(labelAngle=0, labelAlign='left', format='%B')
+                    ).properties(
+                        title=f'{variavel_analise1} ao longo do ano {ano_analise1}',
+                        bounds='flush',
+                        background=chart_bg
+                    ).configure_facet(
+                        spacing=0
+                    ).configure_view(
+                        stroke=None
+                    ).configure_title(
+                        anchor='end'
+                    )
 
-                # Exibir o gráfico atualizado
-                st.altair_chart(chart_temp_ano, use_container_width=True)
+                    # Exibir o gráfico atualizado
+                    st.altair_chart(chart_temp_ano, use_container_width=True)
+if anual_mensal == 'Mensal':
+    n_years = st.number_input(
+        'Quantos anos você quer analisar?', 
+        min_value=1,  
+        step=1,  
+        value=1  
+    )
+    n_anos=int(n_years)
+    conjunto_anos = []
+    anos_disponiveis = anos_lista_analise_1.copy()
+    cols = st.columns(n_anos)
+
+    for i in range(n_anos):
+        if not anos_disponiveis:
+            break
+        with cols[i]:  # Coloca o selectbox dentro da coluna correspondente
+            ano = st.selectbox(f'Ano ', anos_disponiveis, key=f'ano_{i}')
+        conjunto_anos.append(ano)
+        anos_disponiveis.remove(ano)
+
+    # Selecionar os meses desejados
+    meses_disponiveis = list(range(1, 13))  # Janeiro (1) a Dezembro (12)
+    conjunto_meses = st.multiselect('Selecione os meses para análise', meses_disponiveis)
+
+    if conjunto_anos and conjunto_meses:
+        # Filtrar os dados para os anos e meses selecionados
+        davis_analise = davis[(davis['Year'].isin(conjunto_anos)) & (davis['Mês'].isin(conjunto_meses))]
+
+        # Agrupar por Dia, Mês e Ano
+        davis_analise = davis_analise.groupby(['Dia', 'Mês', 'Year'])[conjunto_variaveis].agg(med_min_max).reset_index()
+
+        # Criar coluna de rótulo para o eixo X (Dia do mês)
+        davis_analise['Dia_Mês'] = davis_analise['Dia'].astype(str)
+
+        # Exibir tabela se necessário
+        if tab_or_graf == 'Tabela':
+            st.write(davis_analise)
+
+        # Criar gráfico
+        elif tab_or_graf == 'Gráfico':
+            line_or_scatter_m = st.radio('Tipo do Gráfico', ['Linha', 'Dispersão'])
+            variavel_analise1 = conjunto_variaveis
+
+            for i in range(len(conjunto_variaveis)):
+                titulo_grafico = f"Comparação diária entre anos diferentes - {variavel_analise1[i]}"
+
+                if line_or_scatter_m == 'Linha':
+                    chart = alt.Chart(davis_analise).mark_line(point=True).encode(
+                        x=alt.X("Dia:O", title="Dia do Mês"),
+                        y=alt.Y(f"{variavel_analise1[i]}:Q", title=variavel_analise1[i],scale=alt.Scale(domain=[davis_analise[variavel_analise1].min().item(), davis_analise[variavel_analise1].max().item()])),
+                        color=alt.Color("Year:N", title="Ano"),
+                    ).properties(
+                        title=titulo_grafico,
+                        background=chart_bg
+                    ).configure_title(
+                        fontSize=20,
+                        color=text_color
+                    ).configure_axis(
+                        labelColor=text_color,
+                        titleColor=text_color
+                    )
+
+                elif line_or_scatter_m == 'Dispersão':
+                    chart = alt.Chart(davis_analise).mark_circle(size=100, opacity=0.9).encode(
+                        x=alt.X("Dia:O", title="Dia do Mês"),
+                        y=alt.Y(f"{variavel_analise1[i]}:Q", title=variavel_analise1[i]),
+                        color=alt.Color("Year:N", title="Ano"),
+                    ).properties(
+                        title=titulo_grafico,
+                        background=chart_bg
+                    ).configure_title(
+                        fontSize=20,
+                        color=text_color
+                    ).configure_axis(
+                        labelColor=text_color,
+                        titleColor=text_color
+                    )
+
+             
+
+               
+                st.altair_chart(chart, use_container_width=True)
+
+
+            
+
+            
